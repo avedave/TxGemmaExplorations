@@ -1,0 +1,24 @@
+# Python virtual environment
+.venv/
+venv/
+*.venv
+hf_txgemma/.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables
+.env
+*.env.*
+hf_txgemma/.env
+
+# Large data files & archives
+*.zip
+*.pdf
+
+# OS-specific files
+.DS_Store
+Thumbs.db
