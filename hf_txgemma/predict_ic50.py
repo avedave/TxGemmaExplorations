@@ -70,6 +70,9 @@ def main():
     output_csv_file_name = f"{timestamp}-ic50_predictions.csv"
     output_csv_path = os.path.join(SCRIPT_DIR, "predictions", output_csv_file_name)
 
+    # Create predictions directory if it doesn't exist
+    os.makedirs(os.path.dirname(output_csv_path), exist_ok=True)
+
     print("Loading model and tokenizer...")
     model, tokenizer = get_model_and_tokenizer()
     pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
@@ -106,23 +109,35 @@ def main():
                     avg_ic50 = np.mean(predictions)
                     min_ic50 = np.min(predictions)
                     max_ic50 = np.max(predictions)
+                    var_ic50 = np.var(predictions)
+                    std_ic50 = np.std(predictions)
                     
-                    results.append({
+                    result_row = {
                         "ChEMBL ID": chembl_id,
                         "Name": name,
                         "Smiles": smiles,
                         "Average IC50": avg_ic50,
                         "Min IC50": min_ic50,
                         "Max IC50": max_ic50,
-                    })
-                    print(f"  Results: Avg={avg_ic50:.2f}, Min={min_ic50:.2f}, Max={max_ic50:.2f}")
+                        "Variance": var_ic50,
+                        "Std Dev": std_ic50,
+                    }
+
+                    for i, p in enumerate(predictions):
+                        result_row[f"Prediction {i+1}"] = p
+                    
+                    results.append(result_row)
+
+                    print(f"  Results: Avg={avg_ic50:.2f}, Min={min_ic50:.2f}, Max={max_ic50:.2f}, Var={var_ic50:.2f}, StdDev={std_ic50:.2f}")
                 
                 compounds_processed += 1
 
     print(f"Writing results to {output_csv_path}...")
     with open(output_csv_path, "w", newline="", encoding="utf-8") as outfile:
         if results:
-            writer = csv.DictWriter(outfile, fieldnames=results[0].keys())
+            # Define fieldnames based on the first result, ensuring consistent order
+            fieldnames = list(results[0].keys())
+            writer = csv.DictWriter(outfile, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(results)
 
