@@ -18,11 +18,11 @@ load_dotenv()
 MODEL_VARIANT = "9b-predict"
 MODEL_ID = f"google/txgemma-{MODEL_VARIANT}"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-INPUT_CSV_PATH = os.path.join(SCRIPT_DIR, "..", "data", "MEK_Inhibitors.csv")
-TARGET_SEQUENCE_PATH = os.path.join(SCRIPT_DIR, "..", "data", "mek2_target.txt")
+INPUT_CSV_PATH = os.path.join(SCRIPT_DIR, "data", "MEK_Inhibitors.csv")
+TARGET_SEQUENCE_PATH = os.path.join(SCRIPT_DIR, "data", "mek2_target.txt")
 OUTPUT_CSV_PATH = "ic50_predictions.csv"
-NUM_RUNS = 10
-MAX_COMPOUNDS = 10
+NUM_RUNS = 2
+MAX_COMPOUNDS = 2
 
 def get_model_and_tokenizer():
     """Loads and returns the model and tokenizer."""
