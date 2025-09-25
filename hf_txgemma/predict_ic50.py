@@ -5,6 +5,8 @@ import csv
 import numpy as np
 from dotenv import load_dotenv
 from datetime import datetime
+import time
+import time
 
 # Add hf_txgemma to path
 #sys.path.append(os.path.join(os.path.dirname(__file__), 'hf_txgemma'))
@@ -21,7 +23,7 @@ MODEL_ID = f"google/txgemma-{MODEL_VARIANT}"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_CSV_PATH = os.path.join(SCRIPT_DIR, "data", "MEK_Inhibitors.csv")
 TARGET_SEQUENCE_PATH = os.path.join(SCRIPT_DIR, "data", "mek2_target.txt")
-NUM_RUNS = 2
+NUM_RUNS = 1
 MAX_COMPOUNDS = 2
 
 def get_model_and_tokenizer():
@@ -66,6 +68,7 @@ def predict_ic50(pipe, smiles, target_sequence):
 
 def main():
     """Main function to run the prediction and analysis."""
+    start_time = time.time()
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     output_csv_file_name = f"{timestamp}-ic50_predictions.csv"
     output_csv_path = os.path.join(SCRIPT_DIR, "predictions", output_csv_file_name)
@@ -141,7 +144,10 @@ def main():
             writer.writeheader()
             writer.writerows(results)
 
-    print("Script finished successfully.")
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    hms_elapsed = time.strftime('%Hh:%Mm:%Ss', time.gmtime(elapsed_time))
+    print(f"Script finished successfully in {hms_elapsed}.")
 
 if __name__ == "__main__":
     main()
