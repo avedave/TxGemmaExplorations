@@ -23,8 +23,9 @@ MODEL_ID = f"google/txgemma-{MODEL_VARIANT}"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_CSV_PATH = os.path.join(SCRIPT_DIR, "data", "MEK_Inhibitors.csv")
 TARGET_SEQUENCE_PATH = os.path.join(SCRIPT_DIR, "data", "mek2_target.txt")
-NUM_RUNS = 1
-MAX_COMPOUNDS = 2
+ANTI_TARGET_SEQUENCE_PATH = os.path.join(SCRIPT_DIR, "data", "mek1_anti_target.txt")
+NUM_RUNS = 5
+MAX_COMPOUNDS = None  # Set to None to process all compounds
 
 def get_model_and_tokenizer():
     """Loads and returns the model and tokenizer."""
@@ -44,8 +45,8 @@ def get_model_and_tokenizer():
     )
     return model, tokenizer
 
-def get_target_sequence(filepath):
-    """Reads the target amino acid sequence from a file."""
+def get_sequence(filepath):
+    """Reads the amino acid sequence from a file."""
     with open(filepath, "r") as f:
         return f.read().strip()
 
@@ -81,7 +82,9 @@ def main():
     pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
 
     print("Reading target sequence...")
-    target_sequence = get_target_sequence(TARGET_SEQUENCE_PATH)
+    target_sequence = get_sequence(TARGET_SEQUENCE_PATH)
+    print("Reading anti-target sequence...")
+    anti_target_sequence = get_sequence(ANTI_TARGET_SEQUENCE_PATH)
 
     print(f"Reading compounds from {INPUT_CSV_PATH}...")
     
@@ -102,36 +105,56 @@ def main():
             if chembl_id and name and smiles:
                 print(f"Processing {name} ({chembl_id})...")
                 predictions = []
+                anti_predictions = []
                 for i in range(NUM_RUNS):
                     print(f"  Run {i+1}/{NUM_RUNS}...")
                     prediction = predict_ic50(pipe, smiles, target_sequence)
+                    anti_prediction = predict_ic50(pipe, smiles, anti_target_sequence)
                     if prediction is not None:
                         predictions.append(prediction)
+                    if anti_prediction is not None:
+                        anti_predictions.append(anti_prediction)
                 
-                if predictions:
+                if predictions and anti_predictions:
                     avg_ic50 = np.mean(predictions)
                     min_ic50 = np.min(predictions)
                     max_ic50 = np.max(predictions)
                     var_ic50 = np.var(predictions)
                     std_ic50 = np.std(predictions)
-                    
+                    anti_avg_ic50 = np.mean(anti_predictions)
+                    anti_min_ic50 = np.min(anti_predictions)
+                    anti_max_ic50 = np.max(anti_predictions)
+                    anti_var_ic50 = np.var(anti_predictions)
+                    anti_std_ic50 = np.std(anti_predictions)
+
+                    aTrg_Trg_ratio = anti_avg_ic50 / avg_ic50 if avg_ic50 != 0 else "Trg IC50=0"
+
                     result_row = {
                         "ChEMBL ID": chembl_id,
                         "Name": name,
                         "Smiles": smiles,
-                        "Average IC50": avg_ic50,
-                        "Min IC50": min_ic50,
-                        "Max IC50": max_ic50,
-                        "Variance": var_ic50,
-                        "Std Dev": std_ic50,
+                        "aTrg/Trg": aTrg_Trg_ratio,
+                        "Trg MEAN": avg_ic50,
+                        "Trg MIN": min_ic50,
+                        "Trg MAX": max_ic50,
+                        "Trg VAR": var_ic50,
+                        "Trg STD": std_ic50,
+                        "aTrg MEAN": anti_avg_ic50,
+                        "aTrg MIN": anti_min_ic50,
+                        "aTrg MAX": anti_max_ic50,
+                        "aTrg VAR": anti_var_ic50,
+                        "aTrg STD": anti_std_ic50,
                     }
 
                     for i, p in enumerate(predictions):
-                        result_row[f"Prediction {i+1}"] = p
+                        result_row[f"Trg P{i+1}"] = p
+                    
+                    for i, p in enumerate(anti_predictions):
+                        result_row[f"aTrg P{i+1}"] = p
                     
                     results.append(result_row)
 
-                    print(f"  Results: Avg={avg_ic50:.2f}, Min={min_ic50:.2f}, Max={max_ic50:.2f}, Var={var_ic50:.2f}, StdDev={std_ic50:.2f}")
+                    print(f"  Results: aTrg_mean/Trg_mean={aTrg_Trg_ratio:.2f}")
                 
                 compounds_processed += 1
 
