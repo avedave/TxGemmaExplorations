@@ -22,3 +22,5 @@ hf_txgemma/.env
 # OS-specific files
 .DS_Store
 Thumbs.db
+
+hf_txgemma/predictions

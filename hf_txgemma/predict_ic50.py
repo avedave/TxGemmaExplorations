@@ -4,6 +4,7 @@ import sys
 import csv
 import numpy as np
 from dotenv import load_dotenv
+from datetime import datetime
 
 # Add hf_txgemma to path
 #sys.path.append(os.path.join(os.path.dirname(__file__), 'hf_txgemma'))
@@ -20,7 +21,6 @@ MODEL_ID = f"google/txgemma-{MODEL_VARIANT}"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_CSV_PATH = os.path.join(SCRIPT_DIR, "data", "MEK_Inhibitors.csv")
 TARGET_SEQUENCE_PATH = os.path.join(SCRIPT_DIR, "data", "mek2_target.txt")
-OUTPUT_CSV_PATH = "ic50_predictions.csv"
 NUM_RUNS = 2
 MAX_COMPOUNDS = 2
 
@@ -66,6 +66,10 @@ def predict_ic50(pipe, smiles, target_sequence):
 
 def main():
     """Main function to run the prediction and analysis."""
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    output_csv_file_name = f"{timestamp}-ic50_predictions.csv"
+    output_csv_path = os.path.join(SCRIPT_DIR, "predictions", output_csv_file_name)
+
     print("Loading model and tokenizer...")
     model, tokenizer = get_model_and_tokenizer()
     pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
@@ -115,8 +119,8 @@ def main():
                 
                 compounds_processed += 1
 
-    print(f"Writing results to {OUTPUT_CSV_PATH}...")
-    with open(OUTPUT_CSV_PATH, "w", newline="", encoding="utf-8") as outfile:
+    print(f"Writing results to {output_csv_path}...")
+    with open(output_csv_path, "w", newline="", encoding="utf-8") as outfile:
         if results:
             writer = csv.DictWriter(outfile, fieldnames=results[0].keys())
             writer.writeheader()
